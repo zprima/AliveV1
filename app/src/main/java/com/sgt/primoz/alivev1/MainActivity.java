@@ -710,62 +710,79 @@ public class MainActivity extends Activity {
 
         @Override
         public void onViewCreated(View view, Bundle savedInstanceState) {
+            //helper for activity
             final MainActivity activity = (MainActivity)getActivity();
+            //get all modes for current mode
             Mode m = activity.Modes.modes.get(activity.previousState);
+            //set text for mode name and date
             ((TextView)activity.findViewById(R.id.txtPreviousState)).setText(m.name);
             ((TextView)activity.findViewById(R.id.txtPreviousDate)).setText(HumanizeDate(activity.previousDate));
 
-
-
             //create items for every state group and display state name and duration
+            //get linear layout
             LinearLayout ltimestatus = (LinearLayout)activity.findViewById(R.id.ltimestatus);
+            //placeholder for summary
             Calendar calendarSum = null;
+            //for every state
             for(Map.Entry<String,Long> kvp : activity.statustoday.entrySet()){
+                //if sum was no previously defined, set it now
                 if(calendarSum==null){
                     calendarSum = Calendar.getInstance();
                     calendarSum.setTimeInMillis(kvp.getValue());
                 }
                 else{
+                    //add to the sum, current time for the current state
                     calendarSum = addToCalendar(calendarSum.getTimeInMillis(),kvp.getValue());
                 }
-
+                //create a new text view for this state
                 TextView t = new TextView(activity);
+                //set layout params
                 t.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                t.setText(kvp.getKey() + ": " + HumanizeTime(new Date(kvp.getValue())));
+                //set text
+                t.setText(activity.Modes.modes.get(kvp.getKey()).name + ": " + HumanizeTime(new Date(kvp.getValue())));
+                //add to linear layout
                 ltimestatus.addView(t);
-                /*<TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="At home: 20:12"/>*/
             }
             //add a sum
+            //get the calulated calendar sum
             activity.calendarSum = calendarSum;
+            //create a new text view
             final TextView txtSum = new TextView(activity);
+            //give it an id
             activity.txtSumId = View.generateViewId();
             txtSum.setId(activity.txtSumId);
+            //set layout params
             txtSum.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            txtSum.setText("Sum: " + HumanizeTime(calendarSum.getTime()));
+            //set text
+            txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+            //add it to the linear layout
             ltimestatus.addView(txtSum);
 
+            //get the chronometer control
             final Chronometer chrono = ((Chronometer)activity.findViewById(R.id.chronoCurrentDuration));
-            //chrono.setBase(activity.previousDate.getTime() - (System.currentTimeMillis() - SystemClock.elapsedRealtime()));
-
-            //chrono.setBase(SystemClock.elapsedRealtime());
+            //set ticker listener
             chrono.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
                 @Override
                 public void onChronometerTick(Chronometer chronometer) {
-                    Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
-                    chrono.setText(HumanizeTime(c.getTime()));
-                    if(!activity.previousState.equals("absent")){
-                        TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
-                        if(txtSum!=null){
-                            Calendar calendarSum = addToCalendar(activity.calendarSum.getTimeInMillis(), c.getTimeInMillis());
-                            txtSum.setText("Sum: " + HumanizeTime(calendarSum.getTime()));
-                        }
+                //on every tick, calc the diference in date/time
+                Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
+                //display the new time in human friendly way
+                chrono.setText(HumanizeTime(c.getTime()));
+                //if current state is absent, do not update the sum
+                if(!activity.previousState.equals("absent")){
+                    //get the txt for sum
+                    TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
+                    //if no such txt view was found, do nothing
+                    if(txtSum!=null){
+                        //add to the calendar sum calculated earlier, the time from chronometer
+                        Calendar calendarSum = addToCalendar(activity.calendarSum.getTimeInMillis(), c.getTimeInMillis());
+                        //display the new time in human friendly way
+                        txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
                     }
-
+                }
                 }
             });
+            //start the chronometer
             chrono.start();
 
             //create linear layouts and buttons
