@@ -6,7 +6,8 @@
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="trenutno stanje:"/>
+        android:text="Trenutno stanje:"
+        android:textColor="@color/blue"/>
     <TextView
         android:id="@+id/txtPreviousState"
         android:layout_width="fill_parent"
@@ -15,13 +16,53 @@
         android:textSize="22sp"
         android:gravity="center"
         android:textColor="@color/green"
+        />
+    <TextView
+        android:id="@+id/txtPreviousDate"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="od ..."
+        android:gravity="center"
+        />
+    <Chronometer
+        android:id="@+id/chronoCurrentDuration"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
         android:paddingBottom="10dp"
         android:layout_marginBottom="5dp"/>
 
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="nova možna stanja:"/>
+        android:text="Statistika današnjega dne:"
+        android:textColor="@color/blue"/>
+    <LinearLayout
+        android:id="@+id/ltimestatus"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="5dp"
+        android:layout_marginBottom="5dp">
+
+        <!--<TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="At home: 20:12"/>
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="At home: 20:12"/>-->
+
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Nova stanja:"
+        android:textColor="@color/blue"/>
     <ScrollView
         android:id="@+id/btnsScrollView"
         android:layout_height="match_parent"

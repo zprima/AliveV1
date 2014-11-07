@@ -10,6 +10,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
@@ -18,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TableLayout;
@@ -48,7 +50,10 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 
@@ -59,6 +64,9 @@ public class MainActivity extends Activity {
     public String previousState;
     public Date previousDate;
     public Constants.Modes Modes;
+    public Map<String,Long> statustoday;
+    public int txtSumId;
+    public Calendar calendarSum;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -202,6 +210,83 @@ public class MainActivity extends Activity {
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
+
+                        activity.statustoday = new HashMap<String,Long>();
+
+                        Calendar todayCal = Calendar.getInstance();
+
+                        //data contains a collection of records, group them by state and show only current date
+                        for(int i=0;i<data.length();i++){
+                            try{
+                                JSONObject x = data.getJSONObject(i);
+                                //OldState -> NewState
+                                String oldState = x.getString("OldState");
+                                if(oldState.equals("absent")){
+                                    //skiping absent status
+                                    continue;
+                                }
+                                //String newState = x.getString("NewState");
+                                //kdaj je veljal oldstate pa od OldDat do NewDat
+                                Date oldDate = ISO2Date(x.getString("OldDat"));
+                                Date newDate = ISO2Date(x.getString("NewDat"));
+                                Calendar newCal = Calendar.getInstance();
+                                newCal.setTime(newDate);
+                                Calendar oldCal = Calendar.getInstance();
+                                oldCal.setTime(oldDate);
+
+                                //is new cal today and old cal by day is not?
+                                if((todayCal.get(Calendar.MONTH)==newCal.get(Calendar.MONTH))
+                                    && (todayCal.get(Calendar.DAY_OF_MONTH)==newCal.get(Calendar.DAY_OF_MONTH))
+                                    && (todayCal.get(Calendar.MONTH)==oldCal.get(Calendar.MONTH))
+                                    && (todayCal.get(Calendar.DAY_OF_MONTH)!=oldCal.get(Calendar.DAY_OF_MONTH))
+                                ){
+                                    oldCal.set(Calendar.DAY_OF_MONTH,todayCal.get(Calendar.DAY_OF_MONTH));
+                                    oldCal.set(Calendar.HOUR_OF_DAY,0);
+                                    oldCal.set(Calendar.MINUTE,0);
+                                    oldDate = oldCal.getTime();
+                                }
+                                //is new cal today and old cal by month is not
+                                else if((todayCal.get(Calendar.MONTH)==newCal.get(Calendar.MONTH))
+                                        && (todayCal.get(Calendar.DAY_OF_MONTH)==newCal.get(Calendar.DAY_OF_MONTH))
+                                        && (todayCal.get(Calendar.MONTH)!=oldCal.get(Calendar.MONTH))
+                                ){
+                                    oldCal.set(Calendar.DAY_OF_MONTH,todayCal.get(Calendar.DAY_OF_MONTH));
+                                    oldCal.set(Calendar.HOUR_OF_DAY,0);
+                                    oldCal.set(Calendar.MINUTE,0);
+                                    oldDate = oldCal.getTime();
+                                }
+                                //is everything on the same month and day
+                                else if((todayCal.get(Calendar.MONTH)==newCal.get(Calendar.MONTH))
+                                        && (todayCal.get(Calendar.DAY_OF_MONTH)==newCal.get(Calendar.DAY_OF_MONTH))
+                                        && (todayCal.get(Calendar.MONTH)==oldCal.get(Calendar.MONTH))
+                                        && (todayCal.get(Calendar.DAY_OF_MONTH)==oldCal.get(Calendar.DAY_OF_MONTH))
+                                        ){
+                                    //do nothing, for the sake on escaping the last else statement
+                                }
+                                else{
+                                    continue;
+                                }
+
+
+                                //does statustoday contain state?
+                                if(activity.statustoday.containsKey(oldState)){
+                                    //add time to existing value for this key
+                                    Long time = activity.statustoday.get(oldState);
+                                    Calendar c = diffBetweenDates(newDate,oldDate);
+                                    time = addToCalendar(time, c.getTimeInMillis()).getTimeInMillis();
+                                    activity.statustoday.put(oldState, time);
+                                }
+                                else{
+                                    //create new key-value pair
+                                    Calendar c = diffBetweenDates(newDate,oldDate);
+                                    activity.statustoday.put(oldState, c.getTimeInMillis() );
+                                }
+                            }
+                            catch (JSONException e){
+                                e.printStackTrace();
+                            }
+                        }
+
                     }
                     //go to commands fragment
                     getFragmentManager().beginTransaction()
@@ -408,7 +493,9 @@ public class MainActivity extends Activity {
     }
 
     private static String TodayISO8601() {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
+        //TimeZone tz = TimeZone.getTimeZone("UTC");
+        Calendar cal = Calendar.getInstance();
+        TimeZone tz = cal.getTimeZone();
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         df.setTimeZone(tz);
         String nowAsISO = df.format(new Date());
@@ -427,7 +514,10 @@ public class MainActivity extends Activity {
         if(iso==null){
             return new Date();
         }
+        Calendar cal = Calendar.getInstance();
+        TimeZone tz = cal.getTimeZone();
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(tz);
         Date date = new Date();
         try {
             date = df.parse(iso);
@@ -435,6 +525,52 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
         return date;
+    }
+
+    private static String HumanizeDate(Date date){
+        DateFormat df = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+        Calendar cal = Calendar.getInstance();
+        TimeZone tz = cal.getTimeZone();
+        df.setTimeZone(tz);
+        return df.format(date);
+    }
+
+    private static String HumanizeTime(Date date){
+        DateFormat df = new SimpleDateFormat("HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+        TimeZone tz = cal.getTimeZone();
+        df.setTimeZone(tz);
+        return df.format(date);
+    }
+
+    private static Calendar diffBetweenDates(Date d1, Date d2){
+        //in milliseconds
+        long diff = d1.getTime() - d2.getTime();
+        long diffSeconds = diff / 1000 % 60;
+        long diffMinutes = diff / (60 * 1000) % 60;
+        long diffHours = diff / (60 * 60 * 1000) % 24;
+        long diffDays = diff / (24 * 60 * 60 * 1000);
+
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.HOUR_OF_DAY,(int)diffHours);
+        c.set(Calendar.MINUTE,(int)diffMinutes);
+        c.set(Calendar.SECOND,(int)diffSeconds);
+
+        return c;
+    }
+
+    private static Calendar addToCalendar(long t1, long t2){
+        Calendar c1 = Calendar.getInstance();
+        c1.setTimeInMillis(t1);
+
+        Calendar c2 = Calendar.getInstance();
+        c2.setTimeInMillis(t2);
+
+        c1.add(Calendar.SECOND,c2.get(Calendar.SECOND));
+        c1.add(Calendar.MINUTE,c2.get(Calendar.MINUTE));
+        c1.add(Calendar.HOUR_OF_DAY,c2.get(Calendar.HOUR_OF_DAY));
+
+        return c1;
     }
 
     private boolean isNetworkAvailable() {
@@ -574,9 +710,64 @@ public class MainActivity extends Activity {
 
         @Override
         public void onViewCreated(View view, Bundle savedInstanceState) {
-            MainActivity activity = (MainActivity)getActivity();
+            final MainActivity activity = (MainActivity)getActivity();
             Mode m = activity.Modes.modes.get(activity.previousState);
             ((TextView)activity.findViewById(R.id.txtPreviousState)).setText(m.name);
+            ((TextView)activity.findViewById(R.id.txtPreviousDate)).setText(HumanizeDate(activity.previousDate));
+
+
+
+            //create items for every state group and display state name and duration
+            LinearLayout ltimestatus = (LinearLayout)activity.findViewById(R.id.ltimestatus);
+            Calendar calendarSum = null;
+            for(Map.Entry<String,Long> kvp : activity.statustoday.entrySet()){
+                if(calendarSum==null){
+                    calendarSum = Calendar.getInstance();
+                    calendarSum.setTimeInMillis(kvp.getValue());
+                }
+                else{
+                    calendarSum = addToCalendar(calendarSum.getTimeInMillis(),kvp.getValue());
+                }
+
+                TextView t = new TextView(activity);
+                t.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                t.setText(kvp.getKey() + ": " + HumanizeTime(new Date(kvp.getValue())));
+                ltimestatus.addView(t);
+                /*<TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="At home: 20:12"/>*/
+            }
+            //add a sum
+            activity.calendarSum = calendarSum;
+            final TextView txtSum = new TextView(activity);
+            activity.txtSumId = View.generateViewId();
+            txtSum.setId(activity.txtSumId);
+            txtSum.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            txtSum.setText("Sum: " + HumanizeTime(calendarSum.getTime()));
+            ltimestatus.addView(txtSum);
+
+            final Chronometer chrono = ((Chronometer)activity.findViewById(R.id.chronoCurrentDuration));
+            //chrono.setBase(activity.previousDate.getTime() - (System.currentTimeMillis() - SystemClock.elapsedRealtime()));
+
+            //chrono.setBase(SystemClock.elapsedRealtime());
+            chrono.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
+                @Override
+                public void onChronometerTick(Chronometer chronometer) {
+                    Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
+                    chrono.setText(HumanizeTime(c.getTime()));
+                    if(!activity.previousState.equals("absent")){
+                        TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
+                        if(txtSum!=null){
+                            Calendar calendarSum = addToCalendar(activity.calendarSum.getTimeInMillis(), c.getTimeInMillis());
+                            txtSum.setText("Sum: " + HumanizeTime(calendarSum.getTime()));
+                        }
+                    }
+
+                }
+            });
+            chrono.start();
+
             //create linear layouts and buttons
             //how many buttons
             int btnCount = m.otherModes.length;

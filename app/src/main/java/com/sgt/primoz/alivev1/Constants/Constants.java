@@ -35,7 +35,7 @@ public class Constants {
             Map<String,Mode> list = new ArrayMap<String,Mode>();
             list.put("absent",new Mode("Odsoten",new String[]{"work","at_home","fieldwork"}));
             list.put("work",new Mode("V službi",new String[]{"absent","pause","snack","fieldwork"}));
-            list.put("at_home", new Mode("Doma", new String[]{"absent", "pause_h", "snack_h", "fieldwork"}));
+            list.put("at_home", new Mode("Delo doma", new String[]{"absent", "pause_h", "snack_h", "fieldwork"}));
             list.put("fieldwork", new Mode("Teren", new String[]{"absent", "pause_f", "snack_f", "work", "at_home"}));
             list.put("pause", new Mode("Pavza",new String[]{"work"}));
             list.put("pause_h", new Mode("Pavza - doma",new String[]{"at_home"}));
