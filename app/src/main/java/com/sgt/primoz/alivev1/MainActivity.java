@@ -753,8 +753,15 @@ public class MainActivity extends Activity {
             txtSum.setId(activity.txtSumId);
             //set layout params
             txtSum.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            //set text
-            txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+            //check if calendarSum is null
+            if(calendarSum==null){
+                //set text
+                txtSum.setText("Danes še ni blo nič");
+            }
+            else {
+                //set text
+                txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+            }
             //add it to the linear layout
             ltimestatus.addView(txtSum);
 
@@ -764,26 +771,30 @@ public class MainActivity extends Activity {
             chrono.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
                 @Override
                 public void onChronometerTick(Chronometer chronometer) {
-                //on every tick, calc the diference in date/time
-                Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
-                //display the new time in human friendly way
-                chrono.setText(HumanizeTime(c.getTime()));
-                //if current state is absent, do not update the sum
-                if(!activity.previousState.equals("absent")){
-                    //get the txt for sum
-                    TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
-                    //if no such txt view was found, do nothing
-                    if(txtSum!=null){
-                        //add to the calendar sum calculated earlier, the time from chronometer
-                        Calendar calendarSum = addToCalendar(activity.calendarSum.getTimeInMillis(), c.getTimeInMillis());
+                    //if current state is absent, do not update anything
+                    if(!activity.previousState.equals("absent")){
+                        //on every tick, calc the diference in date/time
+                        Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
                         //display the new time in human friendly way
-                        txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+                        chrono.setText(HumanizeTime(c.getTime()));
+
+                        //get the txt for sum
+                        TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
+                        //if no such txt view was found, do nothing
+                        if(txtSum!=null){
+                            //add to the calendar sum calculated earlier, the time from chronometer
+                            Calendar calendarSum = addToCalendar(activity.calendarSum.getTimeInMillis(), c.getTimeInMillis());
+                            //display the new time in human friendly way
+                            txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+                        }
                     }
                 }
-                }
             });
-            //start the chronometer
-            chrono.start();
+
+            if(!activity.previousState.equals("absent")){
+                //start the chronometer
+                chrono.start();
+            }
 
             //create linear layouts and buttons
             //how many buttons
