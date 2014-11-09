@@ -77,7 +77,7 @@ public class MainActivity extends Activity {
             if(isNetworkAvailable()==false){
                 new AlertDialog.Builder(this)
                         .setTitle("Error")
-                        .setMessage("No internet connection")
+                        .setMessage("No network avalible")
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
                                 dialog.cancel();
@@ -144,6 +144,9 @@ public class MainActivity extends Activity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            //todo
+            //check if current fragment is setting
+
             getFragmentManager().beginTransaction()
                     .replace(R.id.container, new SettingFragment())
                     .addToBackStack(null)
@@ -347,52 +350,75 @@ public class MainActivity extends Activity {
 
             @Override
             protected void onPostExecute(Object o) {
-                JSONObject json = (JSONObject)o;
-                Boolean hasError = false;
-                try{
-                    String x = json.getString("error");
-                    hasError = true;
-                }
-                catch (JSONException e){
-                    e.printStackTrace();
-                }
-                //String result = "ok";
-                if(hasError){
-                    //result = "error";
-                    String msg = "android fail get string from json";
-                    try {
-                        msg = json.getString("error");
-                    } catch (JSONException e) {
+                if(o!=null){
+                    JSONObject json = (JSONObject)o;
+                    Boolean hasError = false;
+                    try{
+                        String x = json.getString("error");
+                        hasError = true;
+                    }
+                    catch (JSONException e){
                         e.printStackTrace();
                     }
+                    //String result = "ok";
+                    if(hasError){
+                        //result = "error";
+                        String msg = "android fail get string from json";
+                        try {
+                            msg = json.getString("error");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        //alert dialog for the error
+                        new AlertDialog.Builder(getActivity())
+                                .setTitle("Error")
+                                .setMessage(msg)
+                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.cancel();
+                                    }
+                                })
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .show();
+
+                        ((ProgressBar)getActivity().findViewById(R.id.progressBar)).setIndeterminate(false);
+                        ((ProgressBar)getActivity().findViewById(R.id.progressBar)).setProgress(100);
+                        ((TextView)getActivity().findViewById(R.id.txtLoading)).setText("Not successful");
+                    }
+                    else{
+                        String token = null;
+                        try {
+                            token = json.getString("token");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        ((MainActivity)getActivity()).token = token;
+
+                        //get current status
+                        new HttpLoadStausAsync().execute(new Object[]{((MainActivity)getActivity()).setting.Url});
+                    }
+                }
+                else{
+                    ((ProgressBar)getActivity().findViewById(R.id.progressBar)).setIndeterminate(false);
+                    ((ProgressBar)getActivity().findViewById(R.id.progressBar)).setProgress(100);
+                    ((TextView)getActivity().findViewById(R.id.txtLoading)).setText("Cannot login.");
+
                     //alert dialog for the error
                     new AlertDialog.Builder(getActivity())
                             .setTitle("Error")
-                            .setMessage(msg)
+                            .setMessage("Login failed, try again at later times.")
                             .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
                                     dialog.cancel();
+                                    getFragmentManager().beginTransaction()
+                                            .replace(R.id.container,new SettingFragment())
+                                            .commit();
                                 }
                             })
                             .setIcon(android.R.drawable.ic_dialog_alert)
                             .show();
-
-                    ((ProgressBar)getActivity().findViewById(R.id.progressBar)).setIndeterminate(false);
-                    ((ProgressBar)getActivity().findViewById(R.id.progressBar)).setProgress(100);
-                    ((TextView)getActivity().findViewById(R.id.txtLoading)).setText("Not successful");
                 }
-                else{
-                    String token = null;
-                    try {
-                        token = json.getString("token");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    ((MainActivity)getActivity()).token = token;
 
-                    //get current status
-                    new HttpLoadStausAsync().execute(new Object[]{((MainActivity)getActivity()).setting.Url});
-                }
             }
         }
 
@@ -408,7 +434,6 @@ public class MainActivity extends Activity {
         public void onViewCreated(View view, Bundle savedInstanceState) {
             //get setting from activity
             DBSetting setting = ((MainActivity)getActivity()).setting;
-
             Bundle args = getArguments();
             Boolean login_flag = args.getBoolean("LOGIN_FLAG");
             if(login_flag) {
@@ -452,6 +477,9 @@ public class MainActivity extends Activity {
             response = c.execute(post);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        if(response==null){
+            return null;
         }
         //get context as stream
         InputStream inputStream = null;
