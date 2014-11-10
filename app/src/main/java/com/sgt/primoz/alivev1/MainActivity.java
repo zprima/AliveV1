@@ -276,7 +276,7 @@ public class MainActivity extends Activity {
                                     //add time to existing value for this key
                                     Long time = activity.statustoday.get(oldState);
                                     Calendar c = diffBetweenDates(newDate,oldDate);
-                                    time = addToCalendar(time, c.getTimeInMillis()).getTimeInMillis();
+                                    time = addToCalendar(time, c).getTimeInMillis();
                                     activity.statustoday.put(oldState, time);
                                 }
                                 else{
@@ -521,20 +521,18 @@ public class MainActivity extends Activity {
     }
 
     private static String TodayISO8601() {
-        //TimeZone tz = TimeZone.getTimeZone("UTC");
-        Calendar cal = Calendar.getInstance();
-        TimeZone tz = cal.getTimeZone();
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        String nowAsISO = df.format(new Date());
-        return nowAsISO;
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
+        String result = df.format(new Date());
+        df = null;
+        return result;
     }
 
     private static String DT2ISO8601(Date date) {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
         String nowAsISO = df.format(date);
+        df = null;
         return nowAsISO;
     }
 
@@ -542,16 +540,15 @@ public class MainActivity extends Activity {
         if(iso==null){
             return new Date();
         }
-        Calendar cal = Calendar.getInstance();
-        TimeZone tz = cal.getTimeZone();
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date date = new Date();
         try {
             date = df.parse(iso);
         } catch (ParseException e) {
             e.printStackTrace();
         }
+        int x = 5;
         return date;
     }
 
@@ -587,12 +584,21 @@ public class MainActivity extends Activity {
         return c;
     }
 
-    private static Calendar addToCalendar(long t1, long t2){
+    private static Calendar addToCalendar(long l1, Calendar c2){
         Calendar c1 = Calendar.getInstance();
-        c1.setTimeInMillis(t1);
+        c1.setTimeInMillis(l1);
+        return addToCalendar(c1,c2);
+    }
 
+    private static Calendar addToCalendar(Calendar c1, long l2){
         Calendar c2 = Calendar.getInstance();
-        c2.setTimeInMillis(t2);
+        c2.setTimeInMillis(l2);
+        return addToCalendar(c1,c2);
+    }
+
+    private static Calendar addToCalendar(Calendar c1, Calendar c2){
+        if(c1==null)
+            return c2;
 
         c1.add(Calendar.SECOND,c2.get(Calendar.SECOND));
         c1.add(Calendar.MINUTE,c2.get(Calendar.MINUTE));
@@ -760,7 +766,7 @@ public class MainActivity extends Activity {
                 }
                 else{
                     //add to the sum, current time for the current state
-                    calendarSum = addToCalendar(calendarSum.getTimeInMillis(),kvp.getValue());
+                    calendarSum = addToCalendar(calendarSum,kvp.getValue());
                 }
                 //create a new text view for this state
                 TextView t = new TextView(activity);
@@ -805,15 +811,14 @@ public class MainActivity extends Activity {
                         Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
                         //display the new time in human friendly way
                         chrono.setText(HumanizeTime(c.getTime()));
-
                         //get the txt for sum
                         TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
                         //if no such txt view was found, do nothing
                         if(txtSum!=null){
                             //add to the calendar sum calculated earlier, the time from chronometer
-                            Calendar calendarSum = addToCalendar(activity.calendarSum.getTimeInMillis(), c.getTimeInMillis());
+                            Calendar calendarSum = addToCalendar((Calendar)activity.calendarSum.clone(), c);
                             //display the new time in human friendly way
-                            txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+                            txtSum.setText("Skupaj: " + HumanizeTime(activity.calendarSum.getTime()) + " + " + HumanizeTime(c.getTime()) + " = " +  HumanizeTime(calendarSum.getTime()));
                         }
                     }
                 }
