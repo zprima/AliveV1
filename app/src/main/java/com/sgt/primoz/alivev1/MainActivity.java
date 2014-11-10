@@ -738,6 +738,16 @@ public class MainActivity extends Activity {
                 }
                 else{
                     //display an alert dialog
+                    new AlertDialog.Builder(getActivity())
+                            .setTitle("Error")
+                            .setMessage("Ne morem spremeniti statusa, preveri povezavo al pa kj...")
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.cancel();
+                                }
+                            })
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
                 }
             }
         }
