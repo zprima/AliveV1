@@ -560,7 +560,20 @@ public class MainActivity extends Activity {
         return df.format(date);
     }
 
-    private static String HumanizeTime(Date date){
+    private static String HumanizeTime(Date d) {
+        if(d==null){
+            return " nič ";
+        }
+        Calendar c = Calendar.getInstance();
+        c.setTime(d);
+        return HumanizeTime(c);
+    }
+
+    private static String HumanizeTime(Calendar c){
+        if(c==null){
+            return " nič ";
+        }
+        Date date = c.getTime();
         DateFormat df = new SimpleDateFormat("HH:mm:ss");
         Calendar cal = Calendar.getInstance();
         TimeZone tz = cal.getTimeZone();
@@ -804,7 +817,7 @@ public class MainActivity extends Activity {
             }
             else {
                 //set text
-                txtSum.setText("Skupaj: " + HumanizeTime(calendarSum.getTime()));
+                txtSum.setText("Skupaj: " + HumanizeTime(calendarSum));
             }
             //add it to the linear layout
             ltimestatus.addView(txtSum);
@@ -820,15 +833,20 @@ public class MainActivity extends Activity {
                         //on every tick, calc the diference in date/time
                         Calendar c = diffBetweenDates(new Date(System.currentTimeMillis()), activity.previousDate);
                         //display the new time in human friendly way
-                        chrono.setText(HumanizeTime(c.getTime()));
+                        chrono.setText(HumanizeTime(c));
                         //get the txt for sum
                         TextView txtSum = (TextView)activity.findViewById(activity.txtSumId);
                         //if no such txt view was found, do nothing
                         if(txtSum!=null){
                             //add to the calendar sum calculated earlier, the time from chronometer
-                            Calendar calendarSum = addToCalendar((Calendar)activity.calendarSum.clone(), c);
+                            Calendar calendarSum;
+                            if(activity.calendarSum!=null)
+                                calendarSum = addToCalendar((Calendar)activity.calendarSum.clone(), c);
+                            else
+                                calendarSum = addToCalendar(null, c);
+
                             //display the new time in human friendly way
-                            txtSum.setText("Skupaj: " + HumanizeTime(activity.calendarSum.getTime()) + " + " + HumanizeTime(c.getTime()) + " = " +  HumanizeTime(calendarSum.getTime()));
+                            txtSum.setText("Skupaj: " + HumanizeTime(activity.calendarSum) + " + " + HumanizeTime(c) + " = " + HumanizeTime(calendarSum));
                         }
                     }
                 }
